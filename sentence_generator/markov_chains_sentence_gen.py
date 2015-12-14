@@ -7,8 +7,8 @@
 # This example is in no way perfect, it might cause "bad" outputs for some inputs, because again,
 # this is just a toy implementation.
 
-import sys
 from random import choice
+import argparse
 
 EOS = ['.', '!', '?'] # end of sentence ponctuation
 STATE_SIZE = 2 # number of words in state (used to respect list bound rules below)
@@ -68,37 +68,51 @@ def generate_sentence_list(states_map:dict):
 def generate_sentence_string(states_map:dict):
 	return WORD_SEPARATOR.join(generate_sentence_list(states_map))
 
-def print_usage():
-	print("Usage: markov_chains_sentence_gen.py <filename> [<num_iterations>]")
-
-def main(fname:str, num_iterations:int = 1):
-	fname = sys.argv[1]
+def main(in_fname:str, out_fname:str = None, num_iterations:int = 1):
 	file_text = ''
 	# NOTE: This is far from efficient
-	with open(fname, mode='rt', encoding='utf-8') as f:
+	with open(in_fname, mode='rt', encoding='utf-8') as f:
 		file_text = f.read()
 
 	words = file_text.split()
 	states_map = build_states_map(words)
 
+	# if output file is defined
+	if (out_fname):
+		# Clear file contents
+		with open("out.txt", "w", encoding="utf-8") as f:
+			pass
+	
 	for i in range(0, num_iterations):
 		sentence = generate_sentence_string(states_map)
-		print(sentence)
+		if (out_fname):
+			with open("out.txt", "a", encoding="utf-8") as f:
+				f.write(sentence)
+		else: # no output file defined, print result to console
+			print(sentence)
+
+# Helper functions (not related to Markov Chains)
+
+def positive_check(value:str):
+	"""
+	Checks if the provided string is a positive integer.
+	"""
+	val = int(value)
+	if val > 0:
+		return val
+	raise argparse.ArgumentTypeError('{} is not a positive integer'.format(value))
 
 
 if __name__ == '__main__':
 
-	if (len(sys.argv) == 2):
-		main(sys.argv[1])
-	elif(len(sys.argv) == 3):
-		second_arg = int(sys.argv[2])
-		if(second_arg < 1):
-			print_usage()
-			print("<num_iterations> must be a positive integer")
-			sys.exit(-1)
-		main(sys.argv[1], second_arg)
-	else:
-		print_usage()
-		sys.exit(-1)
+	parser = argparse.ArgumentParser()
+	parser.add_argument('in_file', help='input file name', type=str)
+	parser.add_argument('-o', '--out_file', help='output file name', type=str)
+	parser.add_argument('-i', '--iterations', help='number of iterations (number of sentences to generate)',
+							type=positive_check)
+	args = parser.parse_args()
+
+	main(args.in_file, args.out_file, args.iterations)	
+	
 
 
